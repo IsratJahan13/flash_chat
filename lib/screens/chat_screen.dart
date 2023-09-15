@@ -1,7 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flash_chat/constant.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 
 final _fireStore = FirebaseFirestore.instance;
@@ -84,6 +86,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         _fireStore.collection('messages').add({
                           'text': messageText,
                           'sender': loggedInUser.email,
+                          'date' : FieldValue.serverTimestamp(),
                         } as Map<String, dynamic>);
                       },
                       child: Text(
@@ -107,7 +110,7 @@ class MessagesStream extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: _fireStore.collection('messages').snapshots(),
+      stream: _fireStore.collection('messages').orderBy('date').snapshots(),
       builder: (context, snapshot){
         if(!snapshot.hasData){
           return Center(
@@ -119,11 +122,14 @@ class MessagesStream extends StatelessWidget {
         for(var message in messages){
           final messageText = message.get('text');
           final messageSender = message.get('sender');
+          final messageDate = message.get('date') as Timestamp;
           final currentUser = loggedInUser.email;
 
           final messageBubble = MessageBubble(
               sender: messageSender,
               text: messageText,
+              date: messageDate.toDate(),
+
               isMe: currentUser == messageSender,
           );
           messageBubbles.add(messageBubble);
@@ -145,13 +151,20 @@ class MessagesStream extends StatelessWidget {
 
 class MessageBubble extends StatelessWidget {
 
-  MessageBubble({required this.sender, required this.text, required this.isMe});
+  MessageBubble({required this.sender, required this.text, required this.isMe, required this.date});
   final String sender;
   final String text;
+  final DateTime date;
   final bool isMe;
+
+
 
   @override
   Widget build(BuildContext context) {
+
+    final DateFormat formatter = DateFormat('H:m');
+    final String formatted = formatter.format(date);
+
     return  Padding(
       padding: EdgeInsets.all(10.0),
       child: Column(
@@ -185,6 +198,14 @@ class MessageBubble extends StatelessWidget {
               ),
             ),
           ),
+         Text(
+           formatted,
+           style: TextStyle(
+             fontSize: 12.0,
+             color: Colors.black54,
+           ),
+         ),
+
         ],
       ),
     );
