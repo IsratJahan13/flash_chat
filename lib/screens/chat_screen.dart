@@ -105,6 +105,8 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
 
+
+
 class MessagesStream extends StatelessWidget {
 
   @override
@@ -149,6 +151,7 @@ class MessagesStream extends StatelessWidget {
 
 
 
+
 class MessageBubble extends StatelessWidget {
 
   MessageBubble({required this.sender, required this.text, required this.isMe, required this.date});
@@ -158,12 +161,59 @@ class MessageBubble extends StatelessWidget {
   final bool isMe;
 
 
+  Future deleteData(String id) async {
+    try {
+      await FirebaseFirestore.instance
+          .doc(FirebaseAuth.instance.currentUser!.uid)
+          .collection('messages')
+          .doc(id)
+          .delete();
+    } catch (e) {
+      return false;
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
 
     final DateFormat formatter = DateFormat('H:m');
     final String formatted = formatter.format(date);
+
+
+    void _showDialog() {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            content: new Text("Are you sure you want to delete?"),
+            actions: <Widget>[
+              TextButton(
+                child: new Text("Delete"),
+                onPressed: () {
+
+                  deleteData(text);
+                  Navigator.pop(context);
+
+                  /* FireBaseFirestore.instance.runTransactions((transaction) async =>
+                  await transaction.delete(text));
+                  Navigator.pop(context); */
+
+                },
+              ),
+              TextButton(
+                child: new Text("Cancel"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
+
 
     return  Padding(
       padding: EdgeInsets.all(10.0),
@@ -177,23 +227,28 @@ class MessageBubble extends StatelessWidget {
               color: Colors.black54,
             ),
           ),
-          Material(
-            elevation: 5.0,
-            borderRadius: isMe? BorderRadius.only(
-                topLeft: Radius.circular(30.0),
-                bottomLeft: Radius.circular(30.0),
-                bottomRight: Radius.circular(30.0)) : BorderRadius.only(
-                topRight: Radius.circular(30.0),
-                bottomLeft: Radius.circular(30.0),
-                bottomRight: Radius.circular(30.0)),
-            color: isMe? Colors.lightBlueAccent :Colors.white,
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
-              child: Text(
-                text,
-                style: TextStyle(
-                  fontSize: 15.0,
-                  color: isMe? Colors.white : Colors.black54,
+          TextButton(
+            onPressed: (){
+              _showDialog();
+            },
+            child: Material(
+              elevation: 5.0,
+              borderRadius: isMe? BorderRadius.only(
+                  topLeft: Radius.circular(30.0),
+                  bottomLeft: Radius.circular(30.0),
+                  bottomRight: Radius.circular(30.0)) : BorderRadius.only(
+                  topRight: Radius.circular(30.0),
+                  bottomLeft: Radius.circular(30.0),
+                  bottomRight: Radius.circular(30.0)),
+              color: isMe? Colors.lightBlueAccent :Colors.white,
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    fontSize: 15.0,
+                    color: isMe? Colors.white : Colors.black54,
+                  ),
                 ),
               ),
             ),
