@@ -17,8 +17,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final _auth = FirebaseAuth.instance;
   bool showSpinner = false;
-  late String email;
-  late String password;
+  late String email = 'naishe.ict.cou@gmail.com';
+  late String password = '123456';
 
   @override
   Widget build(BuildContext context) {

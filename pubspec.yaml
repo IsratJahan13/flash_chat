@@ -41,6 +41,7 @@ dependencies:
   cloud_firestore: ^4.9.1
   modal_progress_hud_nsn: ^0.4.0
   intl: ^0.18.1
+  vibration: ^1.8.1
 
 dev_dependencies:
   flutter_test:

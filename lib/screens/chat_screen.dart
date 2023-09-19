@@ -4,6 +4,7 @@ import 'package:flash_chat/constant.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:vibration/vibration.dart';
 
 
 final _fireStore = FirebaseFirestore.instance;
@@ -88,6 +89,8 @@ class _ChatScreenState extends State<ChatScreen> {
                           'sender': loggedInUser.email,
                           'date' : FieldValue.serverTimestamp(),
                         } as Map<String, dynamic>);
+                        Vibration.vibrate(duration: 1000);
+
                       },
                       child: Text(
                         'Send',
@@ -122,12 +125,14 @@ class MessagesStream extends StatelessWidget {
         final messages = snapshot.data!.docs.reversed;
         List<MessageBubble> messageBubbles = [];
         for(var message in messages){
+          final messageId = message.id;
           final messageText = message.get('text');
           final messageSender = message.get('sender');
           final messageDate = message.get('date') as Timestamp;
           final currentUser = loggedInUser.email;
 
           final messageBubble = MessageBubble(
+            messageId : messageId,
               sender: messageSender,
               text: messageText,
               date: messageDate.toDate(),
@@ -154,23 +159,51 @@ class MessagesStream extends StatelessWidget {
 
 class MessageBubble extends StatelessWidget {
 
-  MessageBubble({required this.sender, required this.text, required this.isMe, required this.date});
+  MessageBubble({required this.messageId, required this.sender, required this.text, required this.isMe, required this.date});
+  final String messageId;
   final String sender;
   final String text;
   final DateTime date;
   final bool isMe;
 
 
-  Future deleteData(String id) async {
+  Future deleteData(String messageId) async {
     try {
-      await FirebaseFirestore.instance
-          .doc(FirebaseAuth.instance.currentUser!.uid)
+      await _fireStore
           .collection('messages')
-          .doc(id)
+          .doc(messageId)
           .delete();
     } catch (e) {
       return false;
     }
+  }
+
+  void _showDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: new Text("Are you sure you want to delete?"),
+          actions: <Widget>[
+            TextButton(
+              child: new Text("Delete"),
+              onPressed: () {
+
+                deleteData(messageId);
+                Navigator.pop(context);
+
+              },
+            ),
+            TextButton(
+              child: new Text("Cancel"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
 
@@ -181,38 +214,6 @@ class MessageBubble extends StatelessWidget {
     final DateFormat formatter = DateFormat('H:m');
     final String formatted = formatter.format(date);
 
-
-    void _showDialog() {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            content: new Text("Are you sure you want to delete?"),
-            actions: <Widget>[
-              TextButton(
-                child: new Text("Delete"),
-                onPressed: () {
-
-                  deleteData(text);
-                  Navigator.pop(context);
-
-                  /* FireBaseFirestore.instance.runTransactions((transaction) async =>
-                  await transaction.delete(text));
-                  Navigator.pop(context); */
-
-                },
-              ),
-              TextButton(
-                child: new Text("Cancel"),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      );
-    }
 
 
     return  Padding(
@@ -229,7 +230,7 @@ class MessageBubble extends StatelessWidget {
           ),
           TextButton(
             onPressed: (){
-              _showDialog();
+              _showDialog(context);
             },
             child: Material(
               elevation: 5.0,
