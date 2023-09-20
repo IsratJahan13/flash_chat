@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flash_chat/constant.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:vibration/vibration.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
@@ -11,6 +10,7 @@ import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 
 final _fireStore = FirebaseFirestore.instance;
 late User loggedInUser;
+List<String> messageIds = [];
 
 class ChatScreen extends StatefulWidget {
 
@@ -47,16 +47,42 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
 
+  void showQuickReplies (){
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context){
+        return ListView(
+          children: [
+            TextButton(
+              onPressed: (){
+                sendMessage(quickReply_1, true, context);
+
+              },
+              child: Center(child: Text(quickReply_1),),
+            ),
+            TextButton(
+              onPressed: (){
+                sendMessage(quickReply_2, true, context);
 
 
- /* Future deleteAllData() async {
-    try {
-      await .resetMyHistory();
-    } catch (e) {
-      // Handle error.
-    }
+              },
+              child: Center(child: Text(quickReply_2),),
+            ),
+            TextButton(
+              onPressed: (){
+                sendMessage(quickReply_3, true, context);
+
+              },
+              child: Center(child: Text(quickReply_3)),
+
+            ),
+          ],
+        );
+      },
+    );
   }
-*/
+
+
 
     @override
     Widget build(BuildContext context) {
@@ -66,7 +92,7 @@ class _ChatScreenState extends State<ChatScreen> {
           actions: <Widget>[
             TextButton(
                 onPressed: (){
-            //      deleteAllData();
+                  deleteMessages(messageIds);
 
                 },
                 child: Text(
@@ -95,6 +121,18 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
+                    IconButton(
+                      iconSize: 25.0,
+                        color: Colors.lightBlueAccent,
+                        onPressed: (){
+                          FocusManager.instance.primaryFocus?.unfocus();
+                          showQuickReplies();
+                        },
+                        icon: Icon(
+                          Icons.quick_contacts_mail,
+                        )
+
+                    ),
                     Expanded(
                       child: TextField(
                         controller: messageTextController,
@@ -107,13 +145,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     TextButton(
                       onPressed: () {
                         messageTextController.clear();
-                        _fireStore.collection('messages').add({
-                          'text': messageText,
-                          'sender': loggedInUser.email,
-                          'date' : FieldValue.serverTimestamp(),
-                        } as Map<String, dynamic>);
-                        Vibration.vibrate(duration: 1000);
-                        FlutterRingtonePlayer.playNotification();
+                        sendMessage(messageText, false, context);
                       },
                       child: Text(
                         'Send',
@@ -147,6 +179,7 @@ class MessagesStream extends StatelessWidget {
         }
         final messages = snapshot.data!.docs.reversed;
         List<MessageBubble> messageBubbles = [];
+        messageIds.clear();
         for(var message in messages){
           final messageId = message.id;
           final messageText = message.get('text');
@@ -163,6 +196,7 @@ class MessagesStream extends StatelessWidget {
               isMe: currentUser == messageSender,
           );
           messageBubbles.add(messageBubble);
+          messageIds.add(messageId);
         }
 
         return Expanded(
@@ -178,6 +212,44 @@ class MessagesStream extends StatelessWidget {
 }
 
 
+void sendMessage(String messageText, bool needPopNavigator, BuildContext context){
+
+  _fireStore.collection('messages').add({
+    'text': messageText,
+    'sender': loggedInUser.email,
+    'date' : FieldValue.serverTimestamp(),
+  } as Map<String, dynamic>);
+  Vibration.vibrate(duration: 1000);
+
+  //         FlutterRingtonePlayer.play( fromAsset: "sounds/fire-04-loop.wav",);
+
+  FlutterRingtonePlayer.playNotification();
+
+  if(needPopNavigator == true){
+    Navigator.pop(context);
+  }
+
+
+}
+
+
+Future deleteMessages(List<String> messageIds) async{
+  for(String messageId in messageIds){
+    deleteMessage(messageId);
+  }
+}
+
+Future deleteMessage(String messageId) async {
+  try {
+    await _fireStore
+        .collection('messages')
+        .doc(messageId)
+        .delete();
+  } catch (e) {
+    return false;
+  }
+}
+
 
 
 class MessageBubble extends StatelessWidget {
@@ -190,17 +262,6 @@ class MessageBubble extends StatelessWidget {
   final bool isMe;
 
 
-  Future deleteData(String messageId) async {
-    try {
-      await _fireStore
-          .collection('messages')
-          .doc(messageId)
-          .delete();
-    } catch (e) {
-      return false;
-    }
-  }
-
   void _showDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -212,7 +273,7 @@ class MessageBubble extends StatelessWidget {
               child: new Text("Delete"),
               onPressed: () {
 
-                deleteData(messageId);
+                deleteMessage(messageId);
                 Navigator.pop(context);
 
               },

@@ -34,3 +34,10 @@ const kTextFieldDecoration = InputDecoration(
     borderRadius: BorderRadius.all(Radius.circular(32.0)),
   ),
 );
+
+const List<String> quickReplies = [
+  'I am in meeting',
+  'Call me after 5 minits',
+  'Wait untill I call',
+
+];
