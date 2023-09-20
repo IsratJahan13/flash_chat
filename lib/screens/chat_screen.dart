@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flash_chat/constant.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:vibration/vibration.dart';
+import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 
 
 final _fireStore = FirebaseFirestore.instance;
@@ -45,12 +47,33 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
 
+
+
+ /* Future deleteAllData() async {
+    try {
+      await .resetMyHistory();
+    } catch (e) {
+      // Handle error.
+    }
+  }
+*/
+
     @override
     Widget build(BuildContext context) {
       return Scaffold(
         appBar: AppBar(
           leading: null,
           actions: <Widget>[
+            TextButton(
+                onPressed: (){
+            //      deleteAllData();
+
+                },
+                child: Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.white),
+                ),
+            ),
             IconButton(
                 icon: Icon(Icons.close),
                 onPressed: () {
@@ -90,7 +113,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           'date' : FieldValue.serverTimestamp(),
                         } as Map<String, dynamic>);
                         Vibration.vibrate(duration: 1000);
-
+                        FlutterRingtonePlayer.playNotification();
                       },
                       child: Text(
                         'Send',
