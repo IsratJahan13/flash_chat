@@ -35,10 +35,3 @@ const kTextFieldDecoration = InputDecoration(
   ),
 );
 
-const List<String> quickReplies = [
-  'I am in meeting',
-  'Call me after 5 minits',
-  'Wait untill I call',
-  'Call me later',
-
-];

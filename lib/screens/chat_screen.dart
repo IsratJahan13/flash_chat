@@ -1,3 +1,5 @@
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flash_chat/constant.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -20,6 +22,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   final _auth = FirebaseAuth.instance;
   final messageTextController = TextEditingController();
+  final db = FirebaseFirestore.instance;
 
   late String messageText;
 
@@ -28,7 +31,10 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
 
     getCurrentUser();
+    getQuickReplies();
   }
+
+
 
   void getCurrentUser() async {
     try {
@@ -40,6 +46,23 @@ class _ChatScreenState extends State<ChatScreen> {
     catch (e) {
       print(e);
     }
+  }
+
+
+
+  late List<String> quickReplies = [];
+
+  void getQuickReplies() async {
+
+    db.collection("quick_replies").get().then(
+          (querySnapshot) {
+        for (var docSnapshot in querySnapshot.docs) {
+          final text = docSnapshot.get('text');
+          quickReplies.add(text);
+        }
+      },
+      onError: (e) => print("Error completing: $e"),
+    );
   }
 
 
@@ -55,6 +78,12 @@ class _ChatScreenState extends State<ChatScreen> {
       );
       textButtons.add(textButton);
     }
+    textButtons.add(IconButton(
+      onPressed: (){
+        showDialogForNewQuickReplies(context);
+      },
+
+      icon: Icon(Icons.add),));
 
     showModalBottomSheet(
       context: context,
@@ -66,10 +95,58 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  Future<void>showDialogForNewQuickReplies(BuildContext context) async {
+    return showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text('TextField in Dialog'),
+            content: TextField(
+              onChanged: (value) {
+                setState(() {
+                  messageText = value;
+                });
+              },
+              controller: messageTextController,
+              decoration: InputDecoration(hintText: "Text Field in Dialog"),
+            ),
+            actions: <Widget>[
+              MaterialButton(
+                color: Colors.green,
+                textColor: Colors.white,
+                child: Text('Save'),
+                onPressed: () {
+                  setState(() {
+                    saveQuickReply(messageText);
+                    Navigator.pop(context);
+                  });
+                },
+              ),
+              MaterialButton(
+                  color: Colors.redAccent,
+                  textColor: Colors.white,
+                  child: Text('Cancel'),
+                  onPressed: (){
+                    setState(() {
+                      Navigator.pop(context);
+                    });
+                  }
+              )
+            ],
+          );
+        });
+  }
 
+  void saveQuickReply(String messageText){
+    FirebaseFirestore.instance.collection('quick_replies').add({
+      'text': messageText,
+    } as Map<String, dynamic>);
+
+  }
 
     @override
     Widget build(BuildContext context) {
+
       return Scaffold(
         appBar: AppBar(
           leading: null,
@@ -120,8 +197,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     Expanded(
                       child: TextField(
                         controller: messageTextController,
+                        textCapitalization: TextCapitalization.sentences,
+
                         onChanged: (value) {
                           messageText = value;
+
                         },
                         decoration: kMessageTextFieldDecoration,
                       ),

@@ -6,6 +6,7 @@ import 'message_bubble.dart';
 
 class MessagesStream extends StatelessWidget {
 
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
